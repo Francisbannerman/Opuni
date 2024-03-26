@@ -1,11 +1,12 @@
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Referral.Dtos.ReferralDto;
 using Referral.Model;
 using Referral.Repositories;
 using Referral.Services;
-using System.Linq.Expressions;
-using Microsoft.AspNetCore.Authorization;
-using Referral.Settings;
+using System.Security.Claims;
+using Front.Model;
+using Referral.EndPoints;
 
 namespace Referral.Controllers;
 
@@ -13,20 +14,19 @@ namespace Referral.Controllers;
 [Route("api/referral")]
 public class ReferralController : ControllerBase
 {
+    private readonly IPaymentService _paymentService;
+    private readonly IEndPoints _endPoints;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ReferralCodeService _referralCodeService;
-    private readonly AuthorizationSettings _authorizationSettings;
 
-    public ReferralController(IUnitOfWork unitOfWork, ReferralCodeService referralCodeService,
-        AuthorizationSettings authorizationSettings)
+    public ReferralController(IUnitOfWork unitOfWork,
+        IEndPoints endPoints, IPaymentService paymentService)
     {
         _unitOfWork = unitOfWork;
-        _referralCodeService = referralCodeService;
-        _authorizationSettings = authorizationSettings;
+        _endPoints = endPoints;
+        _paymentService = paymentService;
     }
     
     [HttpGet("{id}")]
-    [Authorize]
     public ActionResult<ClientDto> GetClient(Guid id)
     {
         string accessToken = HttpContext.Request.Headers["Authorization"];
@@ -38,10 +38,17 @@ public class ReferralController : ControllerBase
         return client.AsDto();
     }
     
-    [HttpGet]
-    [Authorize]
+    [HttpGet("getall")]
     public ActionResult<IEnumerable<ClientDto>> GetAllClients()
     {
+        var claimsIdentity = (ClaimsIdentity)User.Identity;
+        var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+        var referrer = _unitOfWork.Client.GetSpecial(u => u.Id.ToString() == userId);
+
+        if (referrer.Role != SD.Role_Admin)
+        {
+            return Unauthorized();
+        }
         var clients = _unitOfWork.Client.GetAll().Select(client => client.AsDto());
         if (clients == null)
         {
@@ -50,35 +57,14 @@ public class ReferralController : ControllerBase
         return clients.ToList();
     }
 
-    [HttpPost]
+    [HttpPost("create")]
     public ActionResult<ClientDto> CreateClient(CreateClientDto clientDto)
     {
-        if (!_unitOfWork.Client.Exists(r => r.ReferralCode == clientDto.CreatedUsingReferralCode))
-        {
-            return BadRequest("You used a non-existent referral code. Re-look at the referral code " +
-                              "and try again with the appropriate referral code");
-        }
-        _authorizationSettings.IsAdminValid(clientDto);
-        _authorizationSettings.GenerateJwtToken(clientDto);
-
-        var id = Guid.NewGuid();
-        Client client = new()
-        {
-            Id = id, FirstName = clientDto.FirstName, LastName = clientDto.FirstName,
-            TelephoneNumber = clientDto.TelephoneNumber, 
-            ReferralCode = _referralCodeService.GenerateUserReferralCode(clientDto.FirstName, clientDto.LastName, id),
-            DateCreated = DateTimeOffset.Now, CreatedUsingReferralCode = clientDto.CreatedUsingReferralCode,
-            NumberOfTimeReferralHasBeenUsed = 0, Role = SD.Role_Client
-        };
-        _unitOfWork.Client.Add(client);
-        _referralCodeService.IncreaseReferrersCountOfReferree(clientDto.CreatedUsingReferralCode);
-        _unitOfWork.Save();
-        
-        return CreatedAtAction(nameof(GetClient), new { id = client.Id }, client.AsDto());
+        var createdClient = _endPoints.CreateClientEndPoint(clientDto);
+        return CreatedAtAction(nameof(GetClient), new { id = createdClient.Id }, createdClient);
     }
 
     [HttpDelete("{id}")]
-    [Authorize]
     public ActionResult DeleteClient(Guid id)
     {
         var existingClient = _unitOfWork.Client.Get(id);
@@ -91,8 +77,7 @@ public class ReferralController : ControllerBase
         return NoContent();
     }
 
-    [HttpPut("{id}")]
-    [Authorize]
+    [HttpPut("admin/{id}")]
     public ActionResult MakeClientAdmin(Guid id)
     {
         var existingClient = _unitOfWork.Client.Get(id);
@@ -106,17 +91,31 @@ public class ReferralController : ControllerBase
         return NoContent();
     }
     
-    [HttpPost("authenticate")]
-    public IActionResult Authenticate(CreateClientDto clientDto)
+    [HttpPut("business/{id}")]
+    public ActionResult MakeClientBusiness(Guid id)
     {
-        if (_authorizationSettings.IsAdminValid(clientDto))
+        var existingClient = _unitOfWork.Client.Get(id);
+        if (existingClient == null)
         {
-            var token = _authorizationSettings.GenerateJwtToken(clientDto);
-            return Ok(new { token });
+            return NotFound();
         }
-        else
-        {
-            return Unauthorized();
-        }
+        var stripeAccNum = _paymentService.CreateConnectedAccount();
+        existingClient.IsBusiness = true;
+        existingClient.StripeAccountId = stripeAccNum;
+        existingClient.StripeAccountLink = _paymentService.GenerateAccountLink(stripeAccNum);
+        existingClient.Role = SD.Role_Business;
+        _unitOfWork.Client.Edit(existingClient);
+        _unitOfWork.Save();
+        return NoContent();
     }
+
+    [HttpPost("makepayment")]
+    public IActionResult MakePayment(string AmountPaid, string ClientId)
+    {
+        var client = _unitOfWork.Client.GetSpecial(u => u.Id == Guid.Parse(ClientId));
+        var clientName = $"{client.FirstName} {client.LastName}";
+        var sessionUrl = _paymentService.StripePayment(Convert.ToDecimal(AmountPaid), clientName, client.Id);
+        return Content(sessionUrl);
+    }
+    
 }

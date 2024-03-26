@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Referral", "Referral\Referral.csproj", "{87881BE5-7054-4DE5-B39E-44D19B78EE82}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Front", "Front\Front.csproj", "{843C9517-A35B-4A54-9901-05E3A34A1431}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{87881BE5-7054-4DE5-B39E-44D19B78EE82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87881BE5-7054-4DE5-B39E-44D19B78EE82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87881BE5-7054-4DE5-B39E-44D19B78EE82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{843C9517-A35B-4A54-9901-05E3A34A1431}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{843C9517-A35B-4A54-9901-05E3A34A1431}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{843C9517-A35B-4A54-9901-05E3A34A1431}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{843C9517-A35B-4A54-9901-05E3A34A1431}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

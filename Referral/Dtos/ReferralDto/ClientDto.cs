@@ -11,4 +11,8 @@ public class ClientDto
     public string CreatedUsingReferralCode { get; set; }
     public int NumberOfTimeReferralHasBeenUsed { get; set; }
     public string Role { get; set; }
+    public decimal? AmountPaid { get; set; }
+    public bool IsBusiness { get; set; }
+    public string? StripeAccountId { get; set; }
+    public string? StripeAccountLink { get; set; }
 }

@@ -1,12 +1,9 @@
-using Auth0.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Referral;
+using Referral.EndPoints;
 using Referral.Repositories;
 using Referral.Services;
 using Referral.Settings;
-using Microsoft.Extensions.Configuration;
+using Stripe;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,20 +12,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
 builder.Services.AddScoped<ReferralCodeService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IEndPoints, EndPoints>();
+builder.Services.AddScoped<IPaymentService, StripePaymentService>();
 builder.Services.AddDbContext<ApplicationDbContext>(Options =>
     Options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<AuthorizationSettings>();
-
-builder.Services.AddAuthentication(options =>
+builder.Services.AddCors(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.Authority = "https://dev-rbh6jkmgi8r73h4d.us.auth0.com/";
-    options.Audience = "https://localhost:7144";
+    options.AddPolicy("AllowLocalhost7144",
+        builder =>
+        {
+            builder.WithOrigins("https://localhost:7144").AllowAnyHeader().AllowAnyMethod();
+        });
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -36,6 +33,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseCors("AllowLocalhost7144");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -44,6 +42,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:SecretKey").Get<string>();
 app.UseRouting();
 app.UseAuthorization();
 app.UseEndpoints(endpoints =>

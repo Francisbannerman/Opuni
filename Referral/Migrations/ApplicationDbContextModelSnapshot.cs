@@ -28,6 +28,9 @@ namespace Referral.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("AmountPaid")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("CreatedUsingReferralCode")
                         .IsRequired()
                         .HasColumnType("text");
@@ -38,6 +41,9 @@ namespace Referral.Migrations
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsBusiness")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -52,6 +58,12 @@ namespace Referral.Migrations
 
                     b.Property<string>("Role")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("StripeAccountId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StripeAccountLink")
                         .HasColumnType("text");
 
                     b.Property<string>("TelephoneNumber")

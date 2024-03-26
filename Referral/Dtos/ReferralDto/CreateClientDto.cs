@@ -6,4 +6,5 @@ public class CreateClientDto
     public string LastName { get; set; }
     public string TelephoneNumber { get; set; }
     public string CreatedUsingReferralCode { get; set; }
+    public bool IsBusiness { get; set; }
 }
