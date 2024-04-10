@@ -1,10 +1,6 @@
-using System.Net;
-using System.Security.Claims;
 using Front.Models;
 using Front.Proxys;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Referral.Repositories;
 
 namespace Front.Controllers;
 
@@ -26,11 +22,10 @@ public class MakePaymentController : Controller
     [HttpPost]
     public async Task <IActionResult> Index(AmountPaid amountPaid)
     {
-        var clientId = HttpContext.Session.GetString("ClientId");
+        amountPaid._ClientId = HttpContext.Session.GetString("ClientId");
         if (ModelState.IsValid)
         {
-            var response = await _proxy.MakePaymentProxy(amountPaid._AmountPaid, clientId);
-
+            var response = await _proxy.MakePaymentProxy(amountPaid);
             if (response != null)
             {
                 return Redirect(response);
@@ -44,12 +39,12 @@ public class MakePaymentController : Controller
         return View("FailedPayment");
     }
 
-    public IActionResult SuccessfulPayment()
+    public IActionResult FailedPayment()
     {
         return View();
     }
 
-    public IActionResult FailedPayment()
+    public IActionResult SuccessfulPayment()
     {
         return View();
     }

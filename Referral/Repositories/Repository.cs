@@ -43,11 +43,11 @@ public class Repository<T> : IRepository<T> where T : class
     {
         _dbSet.Remove(entity);
     }
-    public void Edit(T entity)
-    {
-        _dbSet.Attach(entity);
-        _db.Entry(entity).State = EntityState.Modified;
-    }
+    // public void Edit(T entity)
+    // {
+    //     _dbSet.Attach(entity);
+    //     _db.Entry(entity).State = EntityState.Modified;
+    // }
     public T GetSpecial(Expression<Func<T, bool>> filter, string? includeProperties = null, bool tracked = false)
     {
         IQueryable<T> query;

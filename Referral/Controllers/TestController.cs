@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Referral.EndPoints;
+using Referral.Model;
 using Referral.Services;
 using Stripe;
 
@@ -10,19 +12,19 @@ public class TestController : Controller
 {
     private readonly IConfiguration _config;
     private IPaymentService _paymentService;
+    private IEndPoints _endPoints;
     public TestController(IPaymentService paymentService,
-        IConfiguration config)
+        IConfiguration config, IEndPoints endPoints)
     {
         _paymentService = paymentService;
         _config = config;
+        _endPoints = endPoints;
     }
 
     [HttpPost]
-    public IActionResult TestCreateStripe(Guid id)
+    public IActionResult TestCreateStripe(AmountPaid amountPaid)
     {
 
-        return Content(_paymentService.StripePayment(id, 
-            _paymentService.CreatePrice(5),
-            _paymentService.CreateConnectedAccount()));
+        return Content(_endPoints.MakePaymentEndPoint(amountPaid));
     }
 }

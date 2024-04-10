@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Front.Proxys;
-using Newtonsoft.Json;
 using Referral.Dtos.ReferralDto;
 
 namespace Front.Controllers;
@@ -32,17 +31,9 @@ public class HomeController : Controller
                 HttpContext.Session.SetString("ClientId", response.CreatedClientId.ToString());
                 return RedirectToAction("Index", "MakePayment");
             }
-            else
-            {
-                ModelState.AddModelError(string.Empty, 
-                    "Failed to create client. Please try again later.");
-            }
+            ModelState.AddModelError(string.Empty, 
+                "Failed to create client. Please try again later.");
         }
-        return View();
-    }
-
-    public IActionResult Privacy()
-    {
         return View();
     }
 

@@ -26,38 +26,109 @@ public class Proxy
         var response = await _httpClient.PostAsync("api/referral/create",
             new StringContent(jsonContent, Encoding.UTF8, "application/json"));
 
-        Guid? createdClientId = null;
+        string? createdClientId = null;
         if (response.IsSuccessStatusCode)
         {
             var responseBody = await response.Content.ReadAsStringAsync();
-            var createdClient = JsonConvert.DeserializeObject<ClientDto>(responseBody);
-            createdClientId = createdClient?.Id;
+            // var createdClient = JsonConvert.DeserializeObject<ClientDto>(responseBody);
+            var createdClient = JsonConvert.DeserializeObject(responseBody);
+            createdClientId = createdClient.ToString();
+            return new ClientCreatedResponse
+            {
+                Response = response, CreatedClientId = createdClientId
+            };
         }
-        return new ClientCreatedResponse
-        {
-            Response = response, CreatedClientId = createdClientId
-        };
+        return null;
     }
     
-    public async Task<string> MakePaymentProxy
-        (decimal amountPaid, string clientId)
+    public async Task<string> MakePaymentProxy(AmountPaid amountPaid)
     {
-        string requestUrl = $"api/referral/makepayment?AmountPaid={amountPaid}&ClientId={clientId}";
-        var requestData = new
-        {
-            AmountPaid = amountPaid.ToString(), ClientId = clientId
-        };
-        var jsonContent = JsonConvert.SerializeObject(requestData);
-        var response = await _httpClient.PostAsync(requestUrl, new 
-            StringContent(jsonContent, Encoding.UTF8, "application/json"));
+        var jsonContent = JsonConvert.SerializeObject(amountPaid);
+        string requestUrl = $"api/referral/makepayment?AmountPaid={amountPaid._AmountPaid}&ClientId={amountPaid._ClientId}";
+
+        var response = await _httpClient.PostAsync(requestUrl,
+            new StringContent(jsonContent, Encoding.UTF8, "application/json"));
 
         if (response.IsSuccessStatusCode)
         {
-            return await response.Content.ReadAsStringAsync();
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var redirectToPaymentPage = JsonConvert.DeserializeObject<string>(responseBody);
+            return redirectToPaymentPage;
+        }
+        return null;
+    }
+
+    public async Task<HttpResponseMessage> GetAllClientsProxy()
+    {
+        string requestUrl = $"api/referral/getall";
+        var response = await _httpClient.GetAsync(requestUrl);
+        if (response.IsSuccessStatusCode)
+        {
+            return response;
         }
         else
         {
-            return null;
+            return new HttpResponseMessage(HttpStatusCode.NotAcceptable);
         }
+    }
+
+    public async Task<HttpResponseMessage> GetClientProxy(string referralCode)
+    {
+        string requestUrl = $"api/referral/{referralCode}";
+        var response = await _httpClient.GetAsync(requestUrl);
+        if (response.IsSuccessStatusCode)
+        {
+            return response;
+        }
+        else
+        {
+            return new HttpResponseMessage(HttpStatusCode.NotAcceptable);
+        }
+    }
+
+    public async Task<HttpResponseMessage> DeleteClientProxy(string referralCode)
+    {
+        string requestUrl = $"api/referral/delete/{referralCode}";
+        var response = await _httpClient.DeleteAsync(requestUrl);
+        if (response.IsSuccessStatusCode)
+        {
+            return response;
+        }
+        else
+        {
+            return new HttpResponseMessage(HttpStatusCode.NotAcceptable);
+        }
+    }
+
+    public async Task<string> MakeClientAdminProxy(string referralCode)
+    {
+        string requestUrl = $"api/referral/admin/{referralCode}";
+        var jsonContent = JsonConvert.SerializeObject(referralCode);
+
+        var response = await _httpClient.PutAsync(requestUrl, new StringContent
+            (jsonContent, Encoding.UTF8, "application/json"));
+        if (response.IsSuccessStatusCode)
+        {
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var redirectToPaymentPage = JsonConvert.DeserializeObject<string>(responseBody);
+            return redirectToPaymentPage;
+        }
+        return null;
+    }
+
+    public async Task<string> MakeClientBusinessProxy(string referralCode)
+    {
+        string requestUrl = $"api/referral/business/{referralCode}";
+        var jsonContent = JsonConvert.SerializeObject(referralCode);
+
+        var response = await _httpClient.PutAsync(requestUrl, new StringContent
+            (jsonContent, Encoding.UTF8, "application/json"));
+        if (response.IsSuccessStatusCode)
+        {
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var redirectToPaymentPage = JsonConvert.DeserializeObject<string>(responseBody);
+            return redirectToPaymentPage;
+        }
+        return null;
     }
 }

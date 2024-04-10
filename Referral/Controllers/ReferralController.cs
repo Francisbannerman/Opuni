@@ -4,8 +4,6 @@ using Referral.Dtos.ReferralDto;
 using Referral.Model;
 using Referral.Repositories;
 using Referral.Services;
-using System.Security.Claims;
-using Front.Model;
 using Referral.EndPoints;
 
 namespace Referral.Controllers;
@@ -14,108 +12,57 @@ namespace Referral.Controllers;
 [Route("api/referral")]
 public class ReferralController : ControllerBase
 {
-    private readonly IPaymentService _paymentService;
     private readonly IEndPoints _endPoints;
-    private readonly IUnitOfWork _unitOfWork;
 
-    public ReferralController(IUnitOfWork unitOfWork,
-        IEndPoints endPoints, IPaymentService paymentService)
+    public ReferralController(IEndPoints endPoints)
     {
-        _unitOfWork = unitOfWork;
         _endPoints = endPoints;
-        _paymentService = paymentService;
     }
     
-    [HttpGet("{id}")]
-    public ActionResult<ClientDto> GetClient(Guid id)
+    [HttpGet("{referralCode}")]
+    public ActionResult<ClientDto> GetClient(string referralCode)
     {
-        string accessToken = HttpContext.Request.Headers["Authorization"];
-        var client = _unitOfWork.Client.Get(id);
-        if (client == null)
-        {
-            return NotFound();
-        }
-        return client.AsDto();
+        return _endPoints.GetClientEndPoint(referralCode);
     }
     
     [HttpGet("getall")]
     public ActionResult<IEnumerable<ClientDto>> GetAllClients()
     {
-        var claimsIdentity = (ClaimsIdentity)User.Identity;
-        var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
-        var referrer = _unitOfWork.Client.GetSpecial(u => u.Id.ToString() == userId);
-
-        if (referrer.Role != SD.Role_Admin)
-        {
-            return Unauthorized();
-        }
-        var clients = _unitOfWork.Client.GetAll().Select(client => client.AsDto());
-        if (clients == null)
-        {
-            return NotFound();
-        }
-        return clients.ToList();
+        return Ok(_endPoints.GetAllClientsEndPoint());
     }
 
     [HttpPost("create")]
     public ActionResult<ClientDto> CreateClient(CreateClientDto clientDto)
     {
         var createdClient = _endPoints.CreateClientEndPoint(clientDto);
-        return CreatedAtAction(nameof(GetClient), new { id = createdClient.Id }, createdClient);
+        return Ok(createdClient.Id);
     }
 
-    [HttpDelete("{id}")]
-    public ActionResult DeleteClient(Guid id)
+    [HttpDelete("delete/{referralCode}")]
+    public ActionResult DeleteClient(string referralCode)
     {
-        var existingClient = _unitOfWork.Client.Get(id);
-        if (existingClient == null)
-        {
-            return NotFound();
-        }
-        _unitOfWork.Client.Remove(existingClient);
-        _unitOfWork.Save();
+        _endPoints.DeleteClientEndPoint(referralCode);
         return NoContent();
     }
 
-    [HttpPut("admin/{id}")]
-    public ActionResult MakeClientAdmin(Guid id)
+    [HttpPut("admin/{referralCode}")]
+    public ActionResult MakeClientAdmin(string referralCode)
     {
-        var existingClient = _unitOfWork.Client.Get(id);
-        if (existingClient == null)
-        {
-            return NotFound();
-        }
-        existingClient.Role = SD.Role_Admin;
-        _unitOfWork.Client.Edit(existingClient);
-        _unitOfWork.Save();
-        return NoContent();
+        var client = _endPoints.MakeClientAdminEndPoint(referralCode);
+        return Ok(client);
     }
     
-    [HttpPut("business/{id}")]
-    public ActionResult MakeClientBusiness(Guid id)
+    [HttpPut("business/{referralCode}")]
+    public ActionResult MakeClientBusiness(string referralCode)
     {
-        var existingClient = _unitOfWork.Client.Get(id);
-        if (existingClient == null)
-        {
-            return NotFound();
-        }
-        var stripeAccNum = _paymentService.CreateConnectedAccount();
-        existingClient.IsBusiness = true;
-        existingClient.StripeAccountId = stripeAccNum;
-        existingClient.StripeAccountLink = _paymentService.GenerateAccountLink(stripeAccNum);
-        existingClient.Role = SD.Role_Business;
-        _unitOfWork.Client.Edit(existingClient);
-        _unitOfWork.Save();
-        return NoContent();
+        var client = _endPoints.MakeClientBusinessEndPoint(referralCode);
+        return Ok(client);
     }
 
     [HttpPost("makepayment")]
-    public IActionResult MakePayment(string AmountPaid, string ClientId)
+    public IActionResult MakePayment(AmountPaid amountPaid)
     {
-        var client = _unitOfWork.Client.GetSpecial(u => u.Id == Guid.Parse(ClientId));
-        var clientName = $"{client.FirstName} {client.LastName}";
-        var sessionUrl = _paymentService.StripePayment(Convert.ToDecimal(AmountPaid), clientName, client.Id);
-        return Content(sessionUrl);
+        return Ok(_endPoints.MakePaymentEndPoint(amountPaid));
     }
     
 }
