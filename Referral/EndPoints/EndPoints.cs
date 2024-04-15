@@ -12,12 +12,15 @@ public class EndPoints : IEndPoints
     private readonly IUnitOfWork _unitOfWork;
     private readonly ReferralCodeService _referralCodeService;
     private readonly IPaymentService _paymentService;
+    private readonly ReportService _report;
     public EndPoints(IUnitOfWork unitOfWork,
-        ReferralCodeService referralCodeService, IPaymentService paymentService)
+        ReferralCodeService referralCodeService, IPaymentService paymentService,
+        ReportService report)
     {
         _unitOfWork = unitOfWork;
         _referralCodeService = referralCodeService;
         _paymentService = paymentService;
+        _report = report;
     }
     
     public ClientDto CreateClientEndPoint(CreateClientDto clientDto)
@@ -113,7 +116,7 @@ public class EndPoints : IEndPoints
         var client = _unitOfWork.Client.GetSpecial(u => u.Id == Guid.Parse(amountPaid._ClientId));
         var clientName = $"{client.FirstName} {client.LastName}";
         var paidTo = _unitOfWork.Client.GetSpecial(u => u.ReferralCode == client.CreatedUsingReferralCode);
-
+        
         if (paidTo.StripeAccountId == null && paidTo.IsBusiness == false)
         {
             throw new Exception(
@@ -127,5 +130,21 @@ public class EndPoints : IEndPoints
         _unitOfWork.Client.Update(client);
         _unitOfWork.Save();
         return sessionUrl;
+    }
+
+    public bool HasAdminAccess(string id)
+    {
+        var client = _unitOfWork.Client.GetSpecial(u => u.Id == Guid.Parse(id));
+        var referrer = _unitOfWork.Client.GetSpecial(u => u.ReferralCode == client.CreatedUsingReferralCode);
+        if (referrer.Role == SD.Role_Admin)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public byte[] DownloadReport()
+    {
+        return _report.ExcelReport();
     }
 }

@@ -22,9 +22,9 @@ public class TestController : Controller
     }
 
     [HttpPost]
-    public IActionResult TestCreateStripe(AmountPaid amountPaid)
+    public IActionResult TestCreateStripe(decimal amountPaid)
     {
-
-        return Content(_endPoints.MakePaymentEndPoint(amountPaid));
+        _paymentService.TopUpAccount(amountPaid);
+        return Ok();
     }
 }

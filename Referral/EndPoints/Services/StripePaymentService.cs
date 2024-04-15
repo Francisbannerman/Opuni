@@ -40,46 +40,46 @@ public class StripePaymentService : IPaymentService
         return accountLink.Url;
     }
     
-    // public string StripePayment(decimal amountPaid, string paidTo, Guid transactionId)
-    // {
-    //     var domain = "https://localhost:7010/";
-    //     var successURL = $"https://localhost:7195/MakePayment/SuccessfulPayment?id={transactionId}";
-    //     var cancelURL = $"https://localhost:7195/MakePayment/FailedPayment";
-    //     
-    //     var options = new SessionCreateOptions
-    //     {
-    //         SuccessUrl = successURL,
-    //         CancelUrl = cancelURL,
-    //         LineItems = new List<SessionLineItemOptions>(),
-    //         Mode = "payment",
-    //     };
-    //     var sessionLineItem = new SessionLineItemOptions
-    //     {
-    //         PriceData = new SessionLineItemPriceDataOptions
-    //         {
-    //             UnitAmount = (long)(Convert.ToDecimal(amountPaid) * 100),
-    //             Currency = "usd",
-    //             ProductData = new SessionLineItemPriceDataProductDataOptions
-    //             {
-    //                 Name = paidTo
-    //             }
-    //         },
-    //         Quantity = 1
-    //     };
-    //     options.LineItems.Add(sessionLineItem);
-    //       
-    //     var service = new SessionService();
-    //     Session session = service.Create(options);
-    //
-    //     return session.Url;
-    // }
+    public string StripePayment_OnHold(decimal amountPaid, string paidTo, Guid transactionId)
+    {
+        var domain = "https://localhost:7144/";
+        var successURL = $"https://localhost:7195/makepayment/successfulpayment?id={transactionId}";
+        var cancelURL = $"https://localhost:7195/makepayment/failedpayment";
+
+        var options = new SessionCreateOptions
+        {
+            SuccessUrl = successURL,
+            CancelUrl = cancelURL,
+            LineItems = new List<SessionLineItemOptions>(),
+            Mode = "payment",
+        };
+        var sessionLineItem = new SessionLineItemOptions
+        {
+            PriceData = new SessionLineItemPriceDataOptions
+            {
+                UnitAmount = (long)(Convert.ToDecimal(amountPaid) * 100),
+                Currency = "usd",
+                ProductData = new SessionLineItemPriceDataProductDataOptions
+                {
+                    Name = paidTo
+                }
+            },
+            Quantity = 1
+        };
+        options.LineItems.Add(sessionLineItem);
+          
+        var service = new SessionService();
+        Session session = service.Create(options);
+    
+        return session.Url;
+    }
 
     public string StripePayment(Guid transactionId, string amountPaid, string paidTo)
     {
         var domain = "https://localhost:7144/";
         var successURL = $"https://localhost:7195/makepayment/successfulpayment?id={transactionId}";
         var cancelURL = $"https://localhost:7195/makepayment/failedpayment";
-
+    
         var options = new SessionCreateOptions
         {
             SuccessUrl = successURL,
@@ -102,25 +102,20 @@ public class StripePaymentService : IPaymentService
                 },
             },
         };
-        var requestOptions = new RequestOptions
-        {
-            StripeAccount = "acct_1P3ly6CSXIUEu8Q8",
-        };
         var service = new SessionService();
-        // Session session = service.Create(options, requestOptions);
         Session session = service.Create(options);
         return session.Url;
     }
 
-    private void TopUpAccount()
+    public void TopUpAccount(decimal amount)
     {
         // Set your secret key. Remember to switch to your live secret key in production.
         // See your keys here: https://dashboard.stripe.com/apikeys
-        StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+        // StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
 
         var options = new TopupCreateOptions
         {
-            Amount = 2000,
+            Amount = (long)amount,
             Currency = "usd",
             Description = "Top-up for week of May 31",
             StatementDescriptor = "Weekly top-up",
@@ -129,17 +124,17 @@ public class StripePaymentService : IPaymentService
         service.Create(options);
     }
 
-    private void PayBusiness()
+    public void PayBusiness(string accountId)
     {
         // Set your secret key. Remember to switch to your live secret key in production.
         // See your keys here: https://dashboard.stripe.com/apikeys
-        StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+        // StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
 
         var options = new TransferCreateOptions
         {
             Amount = 1000,
             Currency = "usd",
-            Destination = "{{CONNECTED_STRIPE_ACCOUNT_ID}}"
+            Destination = accountId
         };
         var service = new TransferService();
         var Transfer = service.Create(options);

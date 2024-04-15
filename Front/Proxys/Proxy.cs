@@ -80,10 +80,7 @@ public class Proxy
         {
             return response;
         }
-        else
-        {
-            return new HttpResponseMessage(HttpStatusCode.NotAcceptable);
-        }
+        return new HttpResponseMessage(HttpStatusCode.NotAcceptable);
     }
 
     public async Task<HttpResponseMessage> DeleteClientProxy(string referralCode)
@@ -130,5 +127,28 @@ public class Proxy
             return redirectToPaymentPage;
         }
         return null;
+    }
+
+    public async Task<HttpResponseMessage> HasAdminAccessProxy(string id)
+    {
+        string requestUrl = $"api/referral/hasadminaccess/{id}";
+
+        var response = await _httpClient.GetAsync(requestUrl);
+        if (response.IsSuccessStatusCode)
+        {
+            return response;
+        }
+        return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+    }
+
+    public async Task<HttpResponseMessage> DownloadGetAllProxy()
+    {
+        string requestUrl = $"api/referral/downloadreport";
+        var response = await _httpClient.GetAsync(requestUrl);
+        if (response.IsSuccessStatusCode)
+        {
+            return response;
+        }
+        return new HttpResponseMessage(HttpStatusCode.BadRequest);
     }
 }

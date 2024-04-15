@@ -14,6 +14,7 @@ builder.Services.AddControllers();
 
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
 builder.Services.AddScoped<ReferralCodeService>();
+builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEndPoints, EndPoints>();
 builder.Services.AddScoped<IPaymentService, StripePaymentService>();

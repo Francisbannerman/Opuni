@@ -64,5 +64,22 @@ public class ReferralController : ControllerBase
     {
         return Ok(_endPoints.MakePaymentEndPoint(amountPaid));
     }
+
+    [HttpGet("hasadminaccess/{id}")]
+    public IActionResult HasAdminAccess(string id)
+    {
+        if (_endPoints.HasAdminAccess(id))
+        {
+            return Ok();
+        }
+        return Unauthorized();
+    }
+
+    [HttpGet("downloadreport")]
+    public IActionResult DownloadReport()
+    {
+        var file = _endPoints.DownloadReport();
+        return File(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "clients.xlsx");
+    }
     
 }

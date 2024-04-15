@@ -20,32 +20,40 @@ public class AdminController : Controller
     [HttpPost]
     public IActionResult Index(string actionType, string _ReferralCode)
     {
-        switch (actionType)
+        if (HasAdminAccess())
         {
-            case "MakeClientBusiness":
-                // Handle Make Client Business action
-                return RedirectToAction("MakeClientBusiness", new { referralCode = _ReferralCode });
+            switch (actionType)
+            {
+                case "MakeClientBusiness":
+                    // Handle Make Client Business action
+                    return RedirectToAction("MakeClientBusiness", new { referralCode = _ReferralCode });
 
-            case "MakeClientAdmin":
-                // Handle Make Client Admin action
-                return RedirectToAction("MakeClientAdmin", new { referralCode = _ReferralCode });
+                case "MakeClientAdmin":
+                    // Handle Make Client Admin action
+                    return RedirectToAction("MakeClientAdmin", new { referralCode = _ReferralCode });
 
-            case "DeleteClient":
-                // Handle Delete Client action
-                return RedirectToAction("DeleteClient", new { referralCode = _ReferralCode });
+                case "DeleteClient":
+                    // Handle Delete Client action
+                    return RedirectToAction("DeleteClient", new { referralCode = _ReferralCode });
 
-            case "GetClient":
-                // Handle Get Client action
-                return RedirectToAction("GetClient", new { referralCode = _ReferralCode });
+                case "GetClient":
+                    // Handle Get Client action
+                    return RedirectToAction("GetClient", new { referralCode = _ReferralCode });
 
-            case "GetAllClients":
-                // Handle Get All Clients action
-                return RedirectToAction("GetAllClients");
+                case "GetAllClients":
+                    // Handle Get All Clients action
+                    return RedirectToAction("GetAllClients");
+                
+                case "DownloadGetAll":
+                    //Handle Download excel of all clients
+                    return RedirectToAction("DownloadGetAll");
 
-            default:
-                // Handle unknown action
-                return BadRequest();
+                default:
+                    // Handle unknown action
+                    return BadRequest();
+            }
         }
+        return Unauthorized("You are not authorized to use this feature");
     }
     
     public async Task<IActionResult> MakeClientBusiness(string referralCode)
@@ -96,5 +104,24 @@ public class AdminController : Controller
             return View("SuccessfulOperation");
         }
         return View("FailedOperation");
+    }
+
+    private bool HasAdminAccess()
+    {
+        var id = HttpContext.Session.GetString("ClientId");
+        var response = _proxy.HasAdminAccessProxy(id);
+        if (response.Result.IsSuccessStatusCode)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public async Task<IActionResult> DownloadGetAll()
+    {
+        HttpResponseMessage response = await _proxy.DownloadGetAllProxy();
+
+        Stream responseStream = await response.Content.ReadAsStreamAsync();
+        return File(responseStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "clients.xlsx");
     }
 }
